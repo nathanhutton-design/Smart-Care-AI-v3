@@ -638,14 +638,25 @@ function calculate() {
                     : hospital>1 ? '⚠️ Out-of-network increases your cost significantly.'
                     : '✅ In-network keeps your costs lower.'}`;
 
-  const ctx2 = document.getElementById('chart');
-  if (chartObj) chartObj.destroy();
-  if (insurance > 0) {
-    chartObj = new Chart(ctx2, {
-      type: 'doughnut',
-      data: { labels: ['Insurance Pays','You Pay'], datasets: [{ data:[covered,patient], backgroundColor:['#007BFF','#ff6b6b'], borderWidth:0 }] },
-      options: { plugins: { legend: { labels: { font: { family:'Nunito', size:13 } } } } }
-    });
+  const chartCanvas = document.getElementById('chart');
+  if (chartObj && typeof chartObj.destroy === 'function') chartObj.destroy();
+  chartCanvas.style.display = 'none';
+
+  if (insurance > 0 && typeof Chart !== 'undefined') {
+    try {
+      chartObj = new Chart(chartCanvas, {
+        type: 'doughnut',
+        data: { labels: ['Insurance Pays','You Pay'], datasets: [{ data:[covered,patient], backgroundColor:['#007BFF','#ff6b6b'], borderWidth:0 }] },
+        options: { plugins: { legend: { labels: { font: { family:'Nunito', size:13 } } } } }
+      });
+      chartCanvas.style.display = '';
+    } catch (err) {
+      console.warn('Chart render failed:', err);
+      chartObj = null;
+      resultDiv.innerHTML += `<div style="margin-top:12px;color:#7aabcc;font-size:13px;">Chart unavailable in this browser or network. Your estimate is still valid.</div>`;
+    }
+  } else if (typeof Chart === 'undefined') {
+    resultDiv.innerHTML += `<div style="margin-top:12px;color:#7aabcc;font-size:13px;">Chart.js not loaded. Chart view is disabled.</div>`;
   }
   if (activePanel === 'ai')      updateAIPanel(lastCalc);
   if (activePanel === 'pricing') updatePricingPanel(lastCalc);
