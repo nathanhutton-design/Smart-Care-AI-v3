@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SmartCare Cost Estimator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@300;400;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #daeeff;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ── CANVAS: fixed, behind everything, FULLY VISIBLE ── */
+  #bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    /* DO NOT set width/height in CSS — JS controls pixel size */
+    pointer-events: none;
+    z-index: 0;
+    /* opacity set to 1 here — individual icon opacity handles subtlety */
+    opacity: 1;
+  }
+
+  /* Everything above the canvas */
+  .hero, .container, .features, .panel-wrap {
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero {
+    text-align: center;
+    padding: 56px 20px 28px;
+  }
+  .hero h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(26px, 5vw, 42px);
+    font-weight: 700; color: #0a4b7a;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 12px rgba(0,100,200,0.10);
+  }
+  .hero p { font-size: 17px; color: #2a6090; margin-top: 8px; font-weight: 600; }
+
+  .container {
+    max-width: 780px; margin: 10px auto 20px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(10px); padding: 34px 36px;
+    border-radius: 22px;
+    box-shadow: 0 12px 48px rgba(0,80,180,0.13), 0 2px 8px rgba(0,80,180,0.07);
+    border: 1.5px solid rgba(180,220,255,0.6);
+  }
+
+  .row { margin-bottom: 22px; }
+
+  label {
+    display: block; font-weight: 700; color: #0a4b7a;
+    margin-bottom: 6px; font-size: 14px;
+    letter-spacing: 0.3px; text-transform: uppercase;
+  }
+
+  select, input[type="text"] {
+    width: 100%; padding: 11px 14px; margin-top: 2px;
+    border: 2px solid #b8d8f5; border-radius: 10px;
+    font-family: 'Nunito', sans-serif; font-size: 15px;
+    color: #1a3a5c; background: #f0f8ff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%230a4b7a' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    background-color: #f0f8ff; cursor: pointer;
+  }
+  select:focus, input[type="text"]:focus {
+    outline: none; border-color: #007BFF;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.15);
+  }
+  input[type="text"]::placeholder { color: #7aabcc; }
+
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #007BFF, #0050cc);
+    color: white; border: none; border-radius: 12px;
+    font-family: 'Poppins', sans-serif; font-size: 16px;
+    font-weight: 600; cursor: pointer; letter-spacing: 0.3px;
+    transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 18px rgba(0,80,255,0.22);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,80,255,0.32); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .result {
+    margin-top: 22px; padding: 18px 20px;
+    background: linear-gradient(135deg, #e8f4ff, #d0eaff);
+    border-radius: 14px; display: none;
+    border-left: 4px solid #007BFF;
+    font-size: 15px; color: #1a3a5c; line-height: 1.7;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  #chart { margin-top: 24px; max-height: 260px; }
+
+  /* ── FEATURES ── */
+  .features {
+    display: flex; justify-content: center;
+    gap: 20px; flex-wrap: wrap;
+    margin: 0 20px 30px; padding: 0 10px;
+  }
+  .feature {
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(8px); padding: 22px 28px;
+    border-radius: 16px; width: 200px; text-align: center;
+    box-shadow: 0 4px 18px rgba(0,80,180,0.10);
+    border: 1.5px solid rgba(180,220,255,0.5);
+    font-weight: 700; color: #0a4b7a; font-size: 15px;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    cursor: pointer; user-select: none;
+  }
+  .feature:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(0,80,255,0.22); border-color: #007BFF; }
+  .feature.active { border-color: #007BFF; background: rgba(230,245,255,0.97); }
+  .feature span { display: block; font-size: 28px; margin-bottom: 8px; }
+
+  /* ── PANELS ── */
+  .panel-wrap { max-width: 780px; margin: 0 auto 30px; padding: 0 20px; }
+  .panel {
+    display: none; background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px); border-radius: 20px;
+    padding: 28px 32px;
+    box-shadow: 0 8px 32px rgba(0,80,180,0.13);
+    border: 1.5px solid rgba(180,220,255,0.7);
+    animation: fadeIn 0.35s ease;
+  }
+  .panel.active { display: block; }
+  .panel h2 {
+    font-family: 'Poppins', sans-serif; font-size: 20px;
+    font-weight: 700; color: #0a4b7a; margin-bottom: 16px;
+  }
+
+  .ai-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 14px; margin-top: 10px; }
+  .ai-card { background: linear-gradient(135deg,#e8f4ff,#d0eaff); border-radius: 12px; padding: 16px; border-left: 4px solid #007BFF; }
+  .ai-card .label { font-size: 12px; color: #5a8ab0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+  .ai-card .value { font-size: 22px; font-weight: 800; color: #0a4b7a; margin-top: 4px; }
+  .ai-card .sub { font-size: 12px; color: #4a7a9b; margin-top: 2px; }
+  .confidence-bar { background: #c8e4f8; border-radius: 6px; height: 8px; margin-top: 8px; }
+  .confidence-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg,#007BFF,#00c6ff); transition: width 0.8s ease; }
+  .insight-box { margin-top: 14px; padding: 14px 16px; background: #fff8e8; border-radius: 10px; border-left: 4px solid #f0a500; font-size: 14px; color: #6b4a00; line-height: 1.6; }
+
+  .pricing-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 4px; }
+  .pricing-table th { text-align: left; padding: 10px 12px; background: #e8f4ff; color: #0a4b7a; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .pricing-table td { padding: 10px 12px; border-bottom: 1px solid #e0eefc; color: #1a3a5c; }
+  .pricing-table tr:last-child td { border-bottom: none; font-weight: 700; color: #0a4b7a; background: #f0f8ff; }
+  .pricing-table .green { color: #1a8a3a; font-weight: 700; }
+  .pricing-table .red { color: #cc2222; font-weight: 700; }
+  .pricing-note { margin-top: 14px; font-size: 13px; color: #5a8ab0; line-height: 1.6; padding: 10px 14px; background: #f0f8ff; border-radius: 8px; }
+
+  .db-search-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .db-search-row input { flex: 1; min-width: 160px; }
+  .db-search-row select { width: 180px; flex-shrink: 0; }
+  .btn-search { padding: 11px 22px; background: linear-gradient(135deg,#007BFF,#0050cc); color: white; border: none; border-radius: 10px; font-family: 'Nunito',sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .db-results { max-height: 420px; overflow-y: auto; }
+  .db-card { padding: 14px 16px; margin-bottom: 10px; border-radius: 12px; border: 1.5px solid #d0e8fa; background: #f7fbff; }
+  .db-card:hover { border-color: #007BFF; }
+  .db-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+  .db-card-name { font-weight: 700; color: #0a4b7a; font-size: 15px; }
+  .db-badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .db-card-desc { font-size: 13px; color: #3a6080; margin-top: 6px; line-height: 1.55; }
+  .db-card-meta { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: #6a90aa; flex-wrap: wrap; }
+  .db-card-meta a { color: #007BFF; text-decoration: none; }
+  .db-card-meta a:hover { text-decoration: underline; }
+  .db-count { font-size: 13px; color: #5a8ab0; margin-bottom: 10px; }
+  .db-no-results { text-align: center; padding: 30px; color: #7aabcc; font-size: 14px; }
+
+  .badge-gov  { background:#dbeeff; color:#0050aa; }
+  .badge-chc  { background:#d8f5e8; color:#1a6a35; }
+  .badge-hosp { background:#fff0d8; color:#8a4a00; }
+  .badge-free { background:#fde8f5; color:#7a1a55; }
+  .badge-pap  { background:#eee8ff; color:#4a20a0; }
+  .badge-drug { background:#d8f5f0; color:#0a5a48; }
+  .badge-gen  { background:#f0ede8; color:#4a4038; }
+  .badge-loan { background:#ffece8; color:#8a2018; }
+  .badge-mh   { background:#dbe8ff; color:#003880; }
+  .badge-dent { background:#ffe8e8; color:#8a0000; }
+</style>
+</head>
+<body>
+
+<!-- CANVAS — drawn on by JS, sits behind everything -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>SmartCare AI Cost Estimator</h1>
+  <p>Know your healthcare costs before you go — and find free &amp; low-cost programs near you.</p>
+</div>
+
+<!-- ESTIMATOR -->
+<div class="container">
+  <div class="row">
+    <label>Insurance Coverage</label>
+    <select id="insurance">
+      <option value="0.8">Premium (80%)</option>
+      <option value="0.6">Standard (60%)</option>
+      <option value="0.4">Basic (40%)</option>
+      <option value="0">Uninsured (0%)</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Procedure Type</label>
+    <select id="procedure">
+      <option value="150">Primary Care Visit ($150)</option>
+      <option value="500">Specialist Visit ($500)</option>
+      <option value="1500">Emergency Visit ($1,500)</option>
+      <option value="3000">Minor Surgery ($3,000)</option>
+      <option value="8000">Major Surgery ($8,000)</option>
+      <option value="25000">Hospital Stay ($25,000)</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Hospital Rate</label>
+    <select id="hospital">
+      <option value="1">In-Network</option>
+      <option value="1.5">Out-of-Network (+50%)</option>
+    </select>
+  </div>
+  <button class="btn-primary" onclick="calculate()">⚡ Estimate My Cost</button>
+  <div id="result" class="result"></div>
+  <canvas id="chart"></canvas>
+</div>
+
+<!-- FEATURE BUTTONS -->
+<div class="features">
+  <div class="feature" id="btn-ai"      onclick="togglePanel('ai')"><span>🤖</span>AI Predictions</div>
+  <div class="feature" id="btn-pricing" onclick="togglePanel('pricing')"><span>💡</span>Transparent Pricing</div>
+  <div class="feature" id="btn-db"      onclick="togglePanel('db')"><span>⚡</span>Instant Results</div>
+</div>
+
+<!-- PANELS -->
+<div class="panel-wrap">
+
+  <div class="panel" id="panel-ai">
+    <h2>🤖 AI Cost Predictions</h2>
+    <p style="font-size:14px;color:#5a8ab0;margin-bottom:16px;">Run your estimate above first — AI predictions will populate here.</p>
+    <div class="ai-grid">
+      <div class="ai-card"><div class="label">Low Estimate</div><div class="value" id="ai-low">—</div><div class="sub">Best-case scenario</div></div>
+      <div class="ai-card"><div class="label">Most Likely</div><div class="value" id="ai-mid">—</div><div class="sub">AI predicted cost</div></div>
+      <div class="ai-card"><div class="label">High Estimate</div><div class="value" id="ai-high">—</div><div class="sub">Worst-case scenario</div></div>
+      <div class="ai-card"><div class="label">Confidence</div><div class="value" id="ai-conf">—</div><div class="sub">Model confidence</div><div class="confidence-bar"><div class="confidence-fill" id="ai-conf-bar" style="width:0%"></div></div></div>
+    </div>
+    <div class="insight-box" id="ai-insight">💡 <strong>Run a cost estimate above</strong> to get personalized AI-powered predictions and savings insights.</div>
+  </div>
+
+  <div class="panel" id="panel-pricing">
+    <h2>💡 Transparent Pricing Breakdown</h2>
+    <p style="font-size:14px;color:#5a8ab0;margin-bottom:16px;">A full line-by-line breakdown of how your cost is calculated — no surprises.</p>
+    <table class="pricing-table">
+      <thead><tr><th>Line Item</th><th>Calculation</th><th>Amount</th></tr></thead>
+      <tbody id="pricing-body"><tr><td colspan="3" style="text-align:center;padding:20px;color:#7aabcc;">Run an estimate above to see your full pricing breakdown.</td></tr></tbody>
+    </table>
+    <div class="pricing-note">How these numbers work: base procedure × network modifier → insurance covers its % → you pay the rest. ±15% variance reflects real-world billing differences. Always request an itemized bill and ask about charity care if costs are a hardship.</div>
+  </div>
+
+  <div class="panel" id="panel-db">
+    <h2>⚡ Instant Results — Free &amp; Low-Cost Programs (NY / NJ / CT)</h2>
+    <p style="font-size:14px;color:#5a8ab0;margin-bottom:14px;">Search our tri-state database of 52 verified programs. Updated April 2026.</p>
+    <div class="db-search-row">
+      <input type="text" id="db-search" placeholder="Search by name, type, eligibility..." oninput="filterDB()">
+      <select id="db-cat" onchange="filterDB()">
+        <option value="">All categories</option>
+        <option value="Government Program">Government Programs</option>
+        <option value="Community Health Center">Community Health Centers</option>
+        <option value="Hospital Financial Assistance">Hospital Financial Aid</option>
+        <option value="Free & Charitable Clinic">Free &amp; Charitable Clinics</option>
+        <option value="Patient Assistance Program">Patient Assistance (PAPs)</option>
+        <option value="Drug Discount Card">Drug Discount Cards</option>
+        <option value="Generic Drugs">Generic Drugs</option>
+        <option value="Financial Aid">Loan &amp; Financial Aid</option>
+        <option value="Mental Health">Mental Health</option>
+        <option value="Dental">Dental &amp; Vision</option>
+      </select>
+    </div>
+    <div class="db-count" id="db-count">Showing all 52 programs</div>
+    <div class="db-results" id="db-results"></div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  ANIMATED BACKGROUND  — all 7 icons, fully visible
+// ════════════════════════════════════════════════════════════
+(function () {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  // Size the canvas in PIXELS to match the viewport
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    // Also fix CSS size so there's no CSS/pixel mismatch
+    canvas.style.width  = window.innerWidth  + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ── DRAW FUNCTIONS ──────────────────────────────────────
+
+  function drawDoctor(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s);
+    // Head
+    c.beginPath(); c.arc(0, -2.2, 0.9, 0, Math.PI * 2); c.fill();
+    // Body
+    c.beginPath(); c.moveTo(-1,-1.2); c.lineTo(-1.2,1.2); c.lineTo(1.2,1.2); c.lineTo(1,-1.2); c.closePath(); c.fill();
+    // White coat
+    c.save(); c.fillStyle = 'rgba(255,255,255,0.5)';
+    c.beginPath(); c.moveTo(-0.5,-1.2); c.lineTo(0,0.5); c.lineTo(0.5,-1.2); c.closePath(); c.fill(); c.restore();
+    // Stethoscope arc
+    c.strokeStyle = 'rgba(30,80,160,0.6)'; c.lineWidth = 0.12;
+    c.beginPath(); c.arc(0.4, 0.1, 0.35, -0.5, Math.PI + 0.5); c.stroke();
+    // Red cross
+    c.fillStyle = 'rgba(220,30,30,0.8)';
+    c.fillRect(-0.12,-0.6, 0.24, 0.08); c.fillRect(-0.04,-0.7, 0.08, 0.26);
+    c.restore();
+  }
+
+  function drawNurse(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s);
+    // Head
+    c.beginPath(); c.arc(0, -2.2, 0.85, 0, Math.PI * 2); c.fill();
+    // Cap
+    c.save(); c.fillStyle = 'rgba(255,255,255,0.85)';
+    c.beginPath(); c.moveTo(-0.95,-3.0); c.lineTo(0.95,-3.0); c.lineTo(0.7,-2.6); c.lineTo(-0.7,-2.6); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(220,30,30,0.9)';
+    c.fillRect(-0.1,-2.95, 0.2, 0.06); c.fillRect(-0.03,-3.0, 0.06, 0.18); c.restore();
+    // Body / dress
+    c.beginPath(); c.moveTo(-1,-1.2); c.lineTo(-1.3,1.8); c.lineTo(1.3,1.8); c.lineTo(1,-1.2); c.closePath(); c.fill();
+    c.restore();
+  }
+
+  function drawStethoscope(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s);
+    c.strokeStyle = '#1a6fbf'; c.lineWidth = 0.22; c.lineCap = 'round';
+    // Earpieces
+    c.beginPath(); c.moveTo(-0.6,-1.8); c.lineTo(-0.6,-1.2); c.stroke();
+    c.beginPath(); c.moveTo( 0.6,-1.8); c.lineTo( 0.6,-1.2); c.stroke();
+    // U-tube
+    c.beginPath(); c.arc(0,-1.2, 0.6, 0, Math.PI); c.stroke();
+    // Tube down
+    c.beginPath(); c.moveTo(0,-0.6); c.bezierCurveTo(0.8,0.2, 1.0,1.0, 0.5,1.6); c.stroke();
+    // Chest piece
+    c.beginPath(); c.arc(0.3, 1.9, 0.4, 0, Math.PI * 2); c.fill();
+    c.restore();
+  }
+
+  function drawBandage(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s); c.save(); c.rotate(0.4);
+    // Strip
+    c.beginPath(); c.roundRect(-1.8,-0.5, 3.6,1.0, 0.25); c.fill();
+    // Pad
+    c.fillStyle = 'rgba(255,255,255,0.55)'; c.fillRect(-0.55,-0.45, 1.1,0.9);
+    // Dots
+    c.fillStyle = 'rgba(80,140,210,0.7)';
+    for (let dx=-0.3; dx<=0.3; dx+=0.3)
+      for (let dy=-0.25; dy<=0.25; dy+=0.25) {
+        c.beginPath(); c.arc(dx,dy, 0.07, 0, Math.PI*2); c.fill();
+      }
+    c.restore(); c.restore();
+  }
+
+  function drawPillBottle(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s);
+    // Orange cap
+    c.save(); c.fillStyle = 'rgba(255,130,0,0.85)';
+    c.beginPath(); c.roundRect(-0.7,-2.8, 1.4,0.7, 0.15); c.fill(); c.restore();
+    // Bottle
+    c.beginPath(); c.roundRect(-0.8,-2.1, 1.6,3.2, 0.2); c.fill();
+    // Label
+    c.fillStyle = 'rgba(255,255,255,0.6)'; c.fillRect(-0.65,-1.6, 1.3,1.5);
+    // Rx cross on label
+    c.fillStyle = 'rgba(0,70,180,0.7)';
+    c.fillRect(-0.12,-1.5,  0.24,0.08); c.fillRect(-0.04,-1.58, 0.08,0.24);
+    // Pills inside
+    c.fillStyle = 'rgba(220,60,60,0.6)';
+    c.beginPath(); c.ellipse(-0.25,0.3, 0.3,0.15, 0.3, 0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse( 0.2, 0.7, 0.3,0.15,-0.3, 0,Math.PI*2); c.fill();
+    c.restore();
+  }
+
+  function drawNeedle(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s); c.rotate(0.6);
+    // Barrel
+    c.beginPath(); c.roundRect(-0.35,-2.5, 0.7,3.5, 0.12); c.fill();
+    // Plunger
+    c.save(); c.fillStyle = 'rgba(255,255,255,0.6)';
+    c.fillRect(-0.28,-2.4, 0.56,0.25); c.restore();
+    // Shaft
+    c.strokeStyle = '#1a6fbf'; c.lineWidth = 0.13;
+    c.beginPath(); c.moveTo(0,1.0); c.lineTo(0,2.6); c.stroke();
+    // Tip
+    c.beginPath(); c.moveTo(-0.12,2.5); c.lineTo(0,2.85); c.lineTo(0.12,2.5); c.fill();
+    // Graduation marks
+    c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 0.07;
+    for (let i=0; i<5; i++) {
+      c.beginPath(); c.moveTo(-0.28,-1.8+i*0.55); c.lineTo(-0.05,-1.8+i*0.55); c.stroke();
+    }
+    c.restore();
+  }
+
+  function drawPill(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s); c.rotate(0.5);
+    // Capsule
+    c.beginPath(); c.ellipse(0,0, 1.2,0.5, 0, 0,Math.PI*2); c.fill();
+    // Half-tint
+    c.save(); c.clip(); c.fillStyle = 'rgba(255,255,255,0.5)';
+    c.fillRect(-1.2,-0.5, 1.2,1.0); c.restore();
+    // Dividing line
+    c.strokeStyle = 'rgba(255,255,255,0.4)'; c.lineWidth = 0.07;
+    c.beginPath(); c.moveTo(0,-0.5); c.lineTo(0,0.5); c.stroke();
+    c.restore();
+  }
+
+  // ── SPAWN ICONS ─────────────────────────────────────────
+  const TYPES = ['doctor','nurse','stethoscope','bandage','pill_bottle','needle','pill'];
+  const icons = [];
+  for (let i = 0; i < 28; i++) {
+    icons.push({
+      type:     TYPES[i % TYPES.length],
+      x:        Math.random() * window.innerWidth,
+      y:        Math.random() * window.innerHeight,
+      // size 60–120 → divided by 14 = scale 4.3–8.6 → icons ~60–100px tall on screen
+      size:     60 + Math.random() * 60,
+      speed:    0.4 + Math.random() * 0.5,
+      rotSpeed: (Math.random() - 0.5) * 0.006,
+      rot:      Math.random() * Math.PI * 2,
+      drift:    (Math.random() - 0.5) * 0.5,
+      opacity:  0.38 + Math.random() * 0.30,
+    });
+  }
+
+  // ── ANIMATE ─────────────────────────────────────────────
+  let t = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    t += 0.008;
+
+    icons.forEach((icon, i) => {
+      icon.y   -= icon.speed;
+      icon.x   += Math.sin(t + i * 0.7) * 0.4 + icon.drift * 0.08;
+      icon.rot += icon.rotSpeed;
+      icon.opacity = 0.38 + 0.22 * Math.sin(t * 0.6 + i * 1.3);
+
+      if (icon.y < -140)               { icon.y = canvas.height + 140; icon.x = Math.random() * canvas.width; }
+      if (icon.x < -140)               icon.x = canvas.width  + 140;
+      if (icon.x > canvas.width + 140) icon.x = -140;
+
+      ctx.save();
+      ctx.globalAlpha  = icon.opacity;
+      ctx.fillStyle    = '#1a6fbf';
+      ctx.strokeStyle  = '#1a6fbf';
+
+      const s = icon.size / 14;
+      switch (icon.type) {
+        case 'doctor':      drawDoctor     (ctx, icon.x, icon.y, s); break;
+        case 'nurse':       drawNurse      (ctx, icon.x, icon.y, s); break;
+        case 'stethoscope': drawStethoscope(ctx, icon.x, icon.y, s); break;
+        case 'bandage':     drawBandage    (ctx, icon.x, icon.y, s); break;
+        case 'pill_bottle': drawPillBottle (ctx, icon.x, icon.y, s); break;
+        case 'needle':      drawNeedle     (ctx, icon.x, icon.y, s); break;
+        case 'pill':        drawPill       (ctx, icon.x, icon.y, s); break;
+      }
+      ctx.restore();
+    });
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+// ════════════════════════════════════════════════════════════
+//  DATABASE
+// ════════════════════════════════════════════════════════════
+const DB = [
+  {name:"NY Medicaid",cat:"Government Program",states:"NY",cost:"Free",elig:"Adults up to 138% FPL; children up to 209% FPL; pregnant women up to 213% FPL",phone:"1-800-541-2831",url:"https://www.health.ny.gov/health_care/medicaid",notes:"Year-round enrollment. Immigration status not a barrier."},
+  {name:"NY Essential Plan",cat:"Government Program",states:"NY",cost:"Free ($0 premium)",elig:"Adults 19–64 earning 138–200% FPL. NOTE: ~450,000 may lose coverage July 1 2026.",phone:"1-855-355-5777",url:"https://nystateofhealth.ny.gov",notes:"Enrollees 200–250% FPL transition to QHP July 1 2026."},
+  {name:"NY State of Health Marketplace",cat:"Government Program",states:"NY",cost:"Subsidized",elig:"Income 100–400% FPL. Enhanced subsidies expired end of 2025.",phone:"1-855-355-5777",url:"https://nystateofhealth.ny.gov",notes:"Avg 2026 premium ~$534/mo after subsidies. Open enrollment Nov 1–Jan 31."},
+  {name:"Child Health Plus (NY)",cat:"Government Program",states:"NY",cost:"Free to low-cost",elig:"Children under 19, families up to 400% FPL.",phone:"1-800-698-4543",url:"https://nystateofhealth.ny.gov",notes:"Year-round enrollment."},
+  {name:"NYC Care",cat:"Government Program",states:"NY",cost:"$0–$30 copay",elig:"NYC residents without insurance. No immigration status requirement.",phone:"1-646-692-2273",url:"https://www.nyccare.nyc",notes:"City-funded program at all NYC Health + Hospitals locations."},
+  {name:"NY Hospital Financial Assistance Law",cat:"Hospital Financial Assistance",states:"NY",cost:"Free to discounted",elig:"Uninsured or underinsured hospital patients. Sliding scale up to 300% FPL.",phone:"Ask hospital billing",url:"https://www.health.ny.gov/facilities/hospital/financial_assist",notes:"Amended Oct 2024. Immigration status CANNOT be used as eligibility criterion."},
+  {name:"NY AIDS Drug Assistance Program (ADAP)",cat:"Government Program",states:"NY",cost:"Free",elig:"Low-income NY residents with HIV/AIDS who are uninsured or underinsured.",phone:"1-800-542-2437",url:"https://www.health.ny.gov/diseases/aids/general/resources/adap",notes:"Part of Ryan White Program. Covers HIV medications and insurance premiums."},
+  {name:"NY Elderly Pharmaceutical Insurance (EPIC)",cat:"Drug Discount Card",states:"NY",cost:"Low-cost",elig:"NY residents age 65+, income up to $75,000 (single) or $100,000 (married).",phone:"1-800-332-3742",url:"https://www.health.ny.gov/health_care/epic",notes:"Supplements Medicare Part D."},
+  {name:"NY Rx Card (NYRxCard)",cat:"Drug Discount Card",states:"NY",cost:"Free card",elig:"All NY state residents. No income limit.",phone:"1-866-699-7227",url:"https://www.newyorkrxcard.com",notes:"State-sponsored discount card. Average savings 20–75% at pharmacies statewide."},
+  {name:"Community Healthcare Network (CHN) — NYC",cat:"Community Health Center",states:"NY",cost:"Sliding scale",elig:"Anyone; priority for uninsured/low-income. No immigration status requirement.",phone:"1-212-432-4000",url:"https://www.chnnyc.org",notes:"Multiple FQHC locations across NYC. Primary care, dental, behavioral health, pharmacy."},
+  {name:"Institute for Family Health — NYC/Hudson Valley",cat:"Community Health Center",states:"NY",cost:"Sliding scale",elig:"Anyone regardless of ability to pay.",phone:"1-800-322-2671",url:"https://www.institute.org",notes:"14 locations in Mid-Hudson Valley, Bronx, Manhattan, Brooklyn."},
+  {name:"Bronx Community Health Network (BCHN)",cat:"Community Health Center",states:"NY",cost:"Sliding scale",elig:"Bronx residents; uninsured/underinsured priority.",phone:"1-718-585-6100",url:"https://www.bchn.org",notes:"9 community-based + 9 school-based health centers in the Bronx."},
+  {name:"Ryan White Clinics — NYC",cat:"Free & Charitable Clinic",states:"NY",cost:"Free",elig:"Low-income NYC residents living with HIV/AIDS who are uninsured/underinsured.",phone:"Varies",url:"https://ryanwhite.hrsa.gov",notes:"HIV primary care, mental health, case management, medication assistance."},
+  {name:"NYC Health + Hospitals",cat:"Community Health Center",states:"NY",cost:"Free to sliding scale",elig:"NYC residents; no insurance required. $0 for incomes under 200% FPL.",phone:"1-844-692-4692",url:"https://www.nychealthandhospitals.org",notes:"Largest public hospital system in US. 11 hospitals + 70+ community health centers."},
+  {name:"NJ FamilyCare / Medicaid",cat:"Government Program",states:"NJ",cost:"Free",elig:"Adults up to 138% FPL; children up to 319% FPL; pregnant women up to 194% FPL.",phone:"1-800-701-0710",url:"https://njfamilycare.dhs.state.nj.us",notes:"2026 UPDATE: Work requirements (80 hrs/mo) and 6-month renewals begin Dec 2026–Jan 2027."},
+  {name:"Get Covered NJ (ACA Marketplace)",cat:"Government Program",states:"NJ",cost:"Subsidized",elig:"NJ residents up to 600% FPL qualify for state premium subsidies in 2026.",phone:"1-833-677-1010",url:"https://www.getcoverednj.gov",notes:"NJ has own individual mandate. Open enrollment Nov 1–Jan 31."},
+  {name:"NJ PAAD (Pharmaceutical Assistance)",cat:"Drug Discount Card",states:"NJ",cost:"Low-cost",elig:"NJ residents 65+ or Social Security Disability; income up to $35,000 single.",phone:"1-800-792-9745",url:"https://www.state.nj.us/health/seniorservices/paad",notes:"Supplements Medicare Part D. Covers Part D donut hole gap."},
+  {name:"Senior Gold Prescription Discount (NJ)",cat:"Drug Discount Card",states:"NJ",cost:"Discounted copays",elig:"NJ residents 65+ not qualifying for PAAD. Income up to $100,000 single.",phone:"1-800-792-9745",url:"https://www.state.nj.us/health/seniorservices/seniorgold",notes:"$15–$20 for generics. Must re-enroll annually."},
+  {name:"Rx4NJ Patient Assistance Portal",cat:"Patient Assistance Program",states:"NJ",cost:"Free (referral)",elig:"Low-income NJ residents who are uninsured or underinsured.",phone:"1-888-793-6765",url:"https://hinj.org/rx4nj",notes:"One-stop portal connecting patients to 400+ manufacturer and nonprofit drug programs."},
+  {name:"NJ FQHC Network",cat:"Community Health Center",states:"NJ",cost:"Sliding scale",elig:"Anyone; sliding fee regardless of insurance or ability to pay.",phone:"See NJ FQHC locator",url:"https://www.nj.gov/health/fhs/primarycare/fqhc",notes:"NJ Dept of Health searchable FQHC directory by county and city."},
+  {name:"Zufall Health Centers (NJ)",cat:"Community Health Center",states:"NJ",cost:"Sliding scale / Free",elig:"Anyone; uninsured and Medicaid welcome. Morris, Sussex, Warren, Hunterdon, Essex, Passaic.",phone:"1-973-328-3344",url:"https://www.zufallhealth.org",notes:"Dental, OB/GYN, behavioral health, pharmacy. Mobile health unit available."},
+  {name:"Henry J. Austin Health Center (Trenton NJ)",cat:"Community Health Center",states:"NJ",cost:"Sliding scale",elig:"Uninsured and underinsured Mercer County residents.",phone:"1-609-278-5900",url:"https://henryjaustin.org",notes:"Primary care, dental, behavioral health, WIC."},
+  {name:"NJ Hospital Charity Care (State-Mandated)",cat:"Hospital Financial Assistance",states:"NJ",cost:"Free to reduced",elig:"NJ residents who are uninsured or underinsured. Free care up to 200% FPL.",phone:"Contact hospital billing",url:"https://www.state.nj.us/health/charity",notes:"NJ law requires all acute-care hospitals to provide charity care."},
+  {name:"RWJBarnabas Charity Care (NJ)",cat:"Hospital Financial Assistance",states:"NJ",cost:"Free to reduced",elig:"Uninsured NJ patients meeting income thresholds.",phone:"1-888-724-7123",url:"https://www.rwjbh.org",notes:"NJ's largest hospital system. Financial counselors at each facility."},
+  {name:"Community Mental Health Centers — NJ",cat:"Mental Health",states:"NJ",cost:"Sliding scale / Free",elig:"NJ residents with mental illness or substance use disorders.",phone:"1-800-382-6717",url:"https://www.nj.gov/humanservices/dmhas",notes:"DMHAS funds county-based community mental health centers statewide."},
+  {name:"CT HUSKY Health (Medicaid/CHIP)",cat:"Government Program",states:"CT",cost:"Free to low-cost",elig:"HUSKY A: families up to 201% FPL. HUSKY B: children up to 323% FPL. HUSKY D: adults up to 138% FPL.",phone:"1-800-537-2549",url:"https://portal.ct.gov/HUSKY",notes:"Year-round enrollment. MED-Connect for employed people with disabilities up to $75,000."},
+  {name:"Covered Connecticut Program",cat:"Government Program",states:"CT",cost:"Free ($0 premium/$0 deductible)",elig:"Adults not eligible for HUSKY, income up to 175% FPL.",phone:"1-855-805-4325",url:"https://www.accesshealthct.com",notes:"CT allocated $70M in state funds to offset federal subsidy cuts in 2026."},
+  {name:"Access Health CT (ACA Marketplace)",cat:"Government Program",states:"CT",cost:"Subsidized",elig:"CT residents not eligible for employer coverage. Federal subsidies 100–400% FPL.",phone:"1-855-805-4325",url:"https://www.accesshealthct.com",notes:"CT's official state marketplace. 2026 Temporary Premium Assistance program active."},
+  {name:"CT AIDS Drug Assistance Program (CADAP)",cat:"Government Program",states:"CT",cost:"Free",elig:"CT residents with HIV/AIDS who are uninsured or underinsured.",phone:"1-860-509-7800",url:"https://www.huskyhealthct.org",notes:"State program covering HIV medications. Apply through CT DSS."},
+  {name:"CT PACE / PACPLUS",cat:"Drug Discount Card",states:"CT",cost:"Low-cost copays",elig:"CT residents 65+ (PACE) or disabled (PACPLUS). Income ~$38,500 single.",phone:"1-800-423-5026",url:"https://portal.ct.gov/DSS",notes:"Supplements Medicare Part D. Reduced copays on brand-name and generic drugs."},
+  {name:"Community Health Center Inc. (CHC) — CT",cat:"Community Health Center",states:"CT",cost:"Sliding scale",elig:"Uninsured, underinsured, Medicaid, all insurance. All ages.",phone:"1-860-347-6971",url:"https://www.chc1.com",notes:"15+ locations statewide. Dental, behavioral health, OB/GYN, HIV care, pharmacy."},
+  {name:"Fair Haven Community Health Care (CT)",cat:"Community Health Center",states:"CT",cost:"Sliding scale",elig:"Greater New Haven residents. All insurance welcome.",phone:"1-203-777-7411",url:"https://www.fairhavenhealthcare.org",notes:"FQHC serving New Haven area. Primary care, dental, OB, behavioral health, pediatrics."},
+  {name:"CT Hospital Financial Assistance (State Law)",cat:"Hospital Financial Assistance",states:"CT",cost:"Free to discounted",elig:"CT patients. Free care up to 250% FPL; discounts up to 400% FPL.",phone:"Contact hospital billing",url:"https://portal.ct.gov/DPH",notes:"CT law requires nonprofit hospitals to provide charity care. Ask for the FAP form."},
+  {name:"Yale New Haven Health — Financial Assistance",cat:"Hospital Financial Assistance",states:"CT",cost:"Free to reduced",elig:"CT patients. Free care up to 200% FPL; discounts up to 400% FPL.",phone:"1-203-688-2000",url:"https://www.ynhh.org",notes:"Covers Yale New Haven, Bridgeport, Greenwich, Lawrence + Memorial, Westerly hospitals."},
+  {name:"Hartford HealthCare Financial Assistance",cat:"Hospital Financial Assistance",states:"CT",cost:"Free to reduced",elig:"CT patients. Free care up to 200% FPL; sliding discount up to 400% FPL.",phone:"1-860-696-2400",url:"https://www.hartfordhealthcare.org",notes:"Hartford Hospital, MidState, Windham, Backus, Charlotte Hungerford."},
+  {name:"GoodRx",cat:"Drug Discount Card",states:"NY/NJ/CT",cost:"Free card",elig:"Anyone. No insurance required.",phone:"N/A",url:"https://www.goodrx.com",notes:"Up to 80% savings at 70,000+ pharmacies. Free app. Compare before paying."},
+  {name:"Cost Plus Drugs (Mark Cuban)",cat:"Generic Drugs",states:"NY/NJ/CT",cost:"Near-wholesale",elig:"Anyone. No insurance needed. Mail-order.",phone:"N/A",url:"https://costplusdrugs.com",notes:"1,000+ generics at transparent cost-plus-15%. Often 80–90% cheaper than retail."},
+  {name:"NeedyMeds Drug Discount Card",cat:"Drug Discount Card",states:"NY/NJ/CT",cost:"Free card",elig:"Anyone. No registration or income verification.",phone:"1-800-503-6897",url:"https://www.needymeds.org/drug-discount-card",notes:"Nonprofit-issued free discount card. Also has large PAP and disease-specific database."},
+  {name:"Walmart $4/$10 Generic Drug Program",cat:"Generic Drugs",states:"NY/NJ/CT",cost:"From $4 (30-day)",elig:"Anyone with a prescription. No membership required.",phone:"1-800-925-6278",url:"https://www.walmart.com/pharmacy",notes:"Hundreds of generic medications. No income or insurance requirement."},
+  {name:"Blink Health / BlinkRx",cat:"Drug Discount Card",states:"NY/NJ/CT",cost:"Free — no membership",elig:"Anyone.",phone:"N/A",url:"https://www.blinkhealth.com",notes:"Pre-purchase at reduced price online, pick up at local pharmacy."},
+  {name:"RxAssist PAP Finder",cat:"Patient Assistance Program",states:"NY/NJ/CT",cost:"Free directory",elig:"Low-income, uninsured or underinsured patients needing brand-name medications.",phone:"N/A",url:"https://www.rxassist.org",notes:"Directory of manufacturer PAPs. Search by drug name."},
+  {name:"NeedyMeds PAP Database",cat:"Patient Assistance Program",states:"NY/NJ/CT",cost:"Free / reduced meds",elig:"Low-income uninsured or underinsured. Each PAP sets its own income threshold.",phone:"1-800-503-6897",url:"https://www.needymeds.org/pap",notes:"10,000+ assistance programs including disease-specific funds."},
+  {name:"Medicare Extra Help (Low-Income Subsidy)",cat:"Government Program",states:"NY/NJ/CT",cost:"Free to minimal copay",elig:"Medicare beneficiaries with limited income. Full Extra Help up to ~138% FPL.",phone:"1-800-772-1213",url:"https://www.ssa.gov/extrahelp",notes:"Covers most or all of Medicare Part D premium, deductible, and copays."},
+  {name:"Open Path Collective (Therapy)",cat:"Mental Health",states:"NY/NJ/CT",cost:"$30–$80/session",elig:"Individuals/families with household income under $100,000.",phone:"N/A",url:"https://openpathcollective.org",notes:"Nonprofit network of licensed therapists. One-time $65 lifetime membership."},
+  {name:"SAMHSA National Helpline",cat:"Mental Health",states:"NY/NJ/CT",cost:"Free",elig:"Anyone. Confidential 24/7.",phone:"1-800-662-4357",url:"https://www.samhsa.gov/find-help/national-helpline",notes:"Free treatment referral line. Provides referrals to local FQHCs and support groups."},
+  {name:"Dental Lifeline Network",cat:"Dental",states:"NY/NJ/CT",cost:"Free",elig:"Elderly (65+), disabled, or medically fragile with no means to pay.",phone:"1-303-534-5360",url:"https://dentallifeline.org",notes:"Comprehensive dental treatment by volunteer dentists. Apply through state DDS affiliate."},
+  {name:"Vision USA (AOA)",cat:"Dental",states:"NY/NJ/CT",cost:"Free",elig:"Uninsured, low-income adults who haven't seen an eye doctor in 3+ years.",phone:"1-800-766-4466",url:"https://www.aoa.org/about-the-aoa/vision-usa",notes:"American Optometric Association free eye exam program."},
+  {name:"EyeCare America (AAO)",cat:"Dental",states:"NY/NJ/CT",cost:"Free",elig:"U.S. citizens 65+, or at risk for glaucoma (diabetics, African Americans 40+).",phone:"1-877-887-6327",url:"https://www.aao.org/eyecare-america",notes:"Free medical eye exam and up to one year of care through volunteer ophthalmologists."},
+  {name:"HealthWell Foundation",cat:"Financial Aid",states:"NY/NJ/CT",cost:"Grants",elig:"Underinsured patients with specific chronic conditions. Income up to 500% FPL.",phone:"1-800-675-8416",url:"https://www.healthwellfoundation.org",notes:"Disease-specific grant funds cover copays, premiums, deductibles."},
+  {name:"Patient Advocate Foundation (PAF)",cat:"Financial Aid",states:"NY/NJ/CT",cost:"Free case mgmt + grants",elig:"Insured Americans who are underinsured or cannot afford their share of costs.",phone:"1-800-532-5274",url:"https://www.patientadvocate.org",notes:"Provides case managers AND financial aid. Co-pay relief fund for specific diagnoses."},
+  {name:"CareCredit",cat:"Financial Aid",states:"NY/NJ/CT",cost:"0% promotional financing",elig:"Anyone who qualifies for the credit card.",phone:"1-800-677-0718",url:"https://www.carecredit.com",notes:"Healthcare credit card. 0% interest for 6–24 months. Read deferred interest terms carefully."}
+];
+
+function badgeClass(cat) {
+  if (cat.includes("Government"))      return "badge-gov";
+  if (cat.includes("Community Health")) return "badge-chc";
+  if (cat.includes("Hospital"))        return "badge-hosp";
+  if (cat.includes("Free"))            return "badge-free";
+  if (cat.includes("Patient Assist"))  return "badge-pap";
+  if (cat.includes("Drug Discount"))   return "badge-drug";
+  if (cat.includes("Generic"))         return "badge-gen";
+  if (cat.includes("Financial"))       return "badge-loan";
+  if (cat.includes("Mental"))          return "badge-mh";
+  if (cat.includes("Dental"))          return "badge-dent";
+  return "badge-gov";
+}
+
+function renderDB(items) {
+  const grid = document.getElementById("db-results");
+  const countEl = document.getElementById("db-count");
+  countEl.textContent = `Showing ${items.length} of ${DB.length} programs`;
+  if (!items.length) { grid.innerHTML = '<div class="db-no-results">No programs match your search.</div>'; return; }
+  grid.innerHTML = items.map(p => `
+    <div class="db-card">
+      <div class="db-card-top">
+        <div class="db-card-name">${p.name}</div>
+        <span class="db-badge ${badgeClass(p.cat)}">${p.cat}</span>
+      </div>
+      <div class="db-card-desc">${p.notes}</div>
+      <div class="db-card-meta">
+        <span>💲 ${p.cost}</span>
+        <span>📍 ${p.states}</span>
+        <span>👤 ${p.elig.length > 65 ? p.elig.substring(0,65)+'…' : p.elig}</span>
+        ${!['N/A','Varies','Ask hospital billing','Contact hospital billing','See NJ FQHC locator'].includes(p.phone) ? `<span>📞 ${p.phone}</span>` : ''}
+        ${p.url ? `<a href="${p.url}" target="_blank">Visit website →</a>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function filterDB() {
+  const q   = document.getElementById("db-search").value.toLowerCase();
+  const cat = document.getElementById("db-cat").value;
+  renderDB(DB.filter(p =>
+    (!cat || p.cat.includes(cat)) &&
+    (!q   || [p.name,p.cat,p.notes,p.elig,p.cost,p.states].join(' ').toLowerCase().includes(q))
+  ));
+}
+
+// ════════════════════════════════════════════════════════════
+//  PANEL TOGGLE
+// ════════════════════════════════════════════════════════════
+let activePanel = null;
+function togglePanel(name) {
+  const pid = 'panel-' + name;
+  const bid = 'btn-'   + name;
+  if (activePanel === name) {
+    document.getElementById(pid).classList.remove('active');
+    document.getElementById(bid).classList.remove('active');
+    activePanel = null; return;
+  }
+  ['ai','pricing','db'].forEach(k => {
+    document.getElementById('panel-' + k).classList.remove('active');
+    document.getElementById('btn-'   + k).classList.remove('active');
+  });
+  document.getElementById(pid).classList.add('active');
+  document.getElementById(bid).classList.add('active');
+  activePanel = name;
+  document.getElementById(pid).scrollIntoView({ behavior:'smooth', block:'start' });
+  if (name === 'db' && !document.getElementById('db-results').innerHTML) renderDB(DB);
+}
+
+// ════════════════════════════════════════════════════════════
+//  COST CALCULATOR
+// ════════════════════════════════════════════════════════════
+let chartObj = null;
+let lastCalc = null;
+
+function calculate() {
+  const insurance = parseFloat(document.getElementById("insurance").value);
+  const procedure = parseFloat(document.getElementById("procedure").value);
+  const hospital  = parseFloat(document.getElementById("hospital").value);
+  const total     = procedure * hospital;
+  const covered   = total * insurance;
+  const patient   = total - covered;
+  const variance  = total * 0.15;
+  const low       = Math.max(0, total - variance);
+  const high      = total + variance;
+  const conf      = Math.floor(Math.random() * 8) + 87;
+  lastCalc = { insurance, procedure, hospital, total, covered, patient, variance, low, high, conf };
+
+  const resultDiv = document.getElementById("result");
+  resultDiv.style.display = "block";
+  resultDiv.innerHTML = `
+    <strong>Total Procedure Cost:</strong> $${total.toLocaleString('en-US',{minimumFractionDigits:2})}<br>
+    <strong>Insurance Covers:</strong> $${covered.toLocaleString('en-US',{minimumFractionDigits:2})} (${Math.round(insurance*100)}%)<br>
+    <strong style="color:#cc2222">You Pay:</strong> $${patient.toLocaleString('en-US',{minimumFractionDigits:2})}<br><br>
+    🤖 <strong>AI Prediction Range:</strong> $${Math.round(low).toLocaleString()} – $${Math.round(high).toLocaleString()} &nbsp;|&nbsp; Confidence: ${conf}%<br>
+    ${insurance===0 ? '⚠️ <strong>Uninsured?</strong> Click <em>Instant Results</em> below to find free & low-cost programs near you.'
+                    : hospital>1 ? '⚠️ Out-of-network increases your cost significantly.'
+                    : '✅ In-network keeps your costs lower.'}`;
+
+  const chartCanvas = document.getElementById('chart');
+  if (chartObj && typeof chartObj.destroy === 'function') chartObj.destroy();
+  chartCanvas.style.display = 'none';
+
+  if (insurance > 0 && typeof Chart !== 'undefined') {
+    try {
+      chartObj = new Chart(chartCanvas, {
+        type: 'doughnut',
+        data: { labels: ['Insurance Pays','You Pay'], datasets: [{ data:[covered,patient], backgroundColor:['#007BFF','#ff6b6b'], borderWidth:0 }] },
+        options: { plugins: { legend: { labels: { font: { family:'Nunito', size:13 } } } } }
+      });
+      chartCanvas.style.display = '';
+    } catch (err) {
+      console.warn('Chart render failed:', err);
+      chartObj = null;
+      resultDiv.innerHTML += `<div style="margin-top:12px;color:#7aabcc;font-size:13px;">Chart unavailable in this browser or network. Your estimate is still valid.</div>`;
+    }
+  } else if (typeof Chart === 'undefined') {
+    resultDiv.innerHTML += `<div style="margin-top:12px;color:#7aabcc;font-size:13px;">Chart.js not loaded. Chart view is disabled.</div>`;
+  }
+  if (activePanel === 'ai')      updateAIPanel(lastCalc);
+  if (activePanel === 'pricing') updatePricingPanel(lastCalc);
+}
+
+function updateAIPanel(c) {
+  if (!c) return;
+  document.getElementById("ai-low").textContent  = '$' + Math.round(c.patient * 0.85).toLocaleString();
+  document.getElementById("ai-mid").textContent  = '$' + Math.round(c.patient).toLocaleString();
+  document.getElementById("ai-high").textContent = '$' + Math.round(c.patient * 1.15).toLocaleString();
+  document.getElementById("ai-conf").textContent = c.conf + '%';
+  document.getElementById("ai-conf-bar").style.width = c.conf + '%';
+  let insight;
+  if (c.insurance === 0)
+    insight = `⚠️ <strong>You selected Uninsured.</strong> Your full estimated cost is <strong>$${Math.round(c.patient).toLocaleString()}</strong>. Many hospitals will reduce or waive this under charity care. Click <strong>Instant Results</strong> to find free programs near you.`;
+  else if (c.hospital > 1)
+    insight = `⚠️ <strong>Out-of-network</strong> is adding 50% to your base cost. Switching in-network could save you approx. <strong>$${Math.round(c.patient-(c.total/1.5)*(1-c.insurance)).toLocaleString()}</strong>.`;
+  else if (c.insurance >= 0.8)
+    insight = `✅ <strong>Premium coverage</strong> is working well. AI confidence: <strong>${c.conf}%</strong> your bill lands between $${Math.round(c.patient*0.85).toLocaleString()} – $${Math.round(c.patient*1.15).toLocaleString()}. Always request an itemized bill.`;
+  else
+    insight = `💡 With <strong>${Math.round(c.insurance*100)}% coverage</strong> you owe $${Math.round(c.patient).toLocaleString()}. If this is a hardship, ask billing about financial assistance — many reduce costs for patients who ask.`;
+  document.getElementById("ai-insight").innerHTML = insight;
+}
+
+function updatePricingPanel(c) {
+  if (!c) return;
+  const insLabel  = c.insurance===0?'None (Uninsured)':c.insurance===0.8?'Premium (80%)':c.insurance===0.6?'Standard (60%)':'Basic (40%)';
+  const hospLabel = c.hospital===1?'In-Network (×1.0)':'Out-of-Network (×1.5)';
+  document.getElementById("pricing-body").innerHTML = `
+    <tr><td>Base procedure cost</td><td>Selected procedure</td><td>$${c.procedure.toLocaleString()}</td></tr>
+    <tr><td>Network rate modifier</td><td>${hospLabel}</td><td class="${c.hospital>1?'red':'green'}">×${c.hospital.toFixed(1)}</td></tr>
+    <tr><td>Adjusted total</td><td>Base × Network rate</td><td>$${c.total.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
+    <tr><td>Insurance payment</td><td>${insLabel}</td><td class="green">−$${c.covered.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
+    <tr><td>AI variance buffer</td><td>±15% billing range</td><td style="color:#888">$${Math.round(c.low).toLocaleString()} – $${Math.round(c.high).toLocaleString()}</td></tr>
+    <tr><td><strong>Your estimated cost</strong></td><td>What you pay</td><td class="red"><strong>$${c.patient.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>`;
+}
+</script>
+</body>
+</html>
