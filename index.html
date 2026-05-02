@@ -116,7 +116,7 @@
   .feature {
     background: rgba(255,255,255,0.88);
     backdrop-filter: blur(8px); padding: 22px 28px;
-    border-radius: 16px; width: 200px; text-align: center;
+    border-radius: 16px; width: 230px; text-align: center;
     box-shadow: 0 4px 18px rgba(0,80,180,0.10);
     border: 1.5px solid rgba(180,220,255,0.5);
     font-weight: 700; color: #0a4b7a; font-size: 15px;
@@ -142,6 +142,11 @@
     font-family: 'Poppins', sans-serif; font-size: 20px;
     font-weight: 700; color: #0a4b7a; margin-bottom: 16px;
   }
+  .panel h3 {
+    font-family: 'Poppins', sans-serif; font-size: 17px;
+    font-weight: 700; color: #0a4b7a; margin: 26px 0 12px;
+    padding-bottom: 8px; border-bottom: 2px solid #d0eaff;
+  }
 
   .ai-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 14px; margin-top: 10px; }
   .ai-card { background: linear-gradient(135deg,#e8f4ff,#d0eaff); border-radius: 12px; padding: 16px; border-left: 4px solid #007BFF; }
@@ -159,6 +164,14 @@
   .pricing-table .green { color: #1a8a3a; font-weight: 700; }
   .pricing-table .red { color: #cc2222; font-weight: 700; }
   .pricing-note { margin-top: 14px; font-size: 13px; color: #5a8ab0; line-height: 1.6; padding: 10px 14px; background: #f0f8ff; border-radius: 8px; }
+
+  .empty-state {
+    text-align: center; padding: 30px 20px;
+    color: #5a8ab0; font-size: 14px; line-height: 1.6;
+    background: #f0f8ff; border-radius: 12px;
+    border: 2px dashed #b8d8f5;
+  }
+  .empty-state strong { color: #0a4b7a; }
 
   .db-search-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
   .db-search-row input { flex: 1; min-width: 160px; }
@@ -234,38 +247,40 @@
   <canvas id="chart"></canvas>
 </div>
 
-<!-- FEATURE BUTTONS -->
+<!-- FEATURE BUTTONS — now only 2: combined AI+Pricing, plus DB -->
 <div class="features">
-  <div class="feature" id="btn-ai"      onclick="togglePanel('ai')"><span>🤖</span>AI Predictions</div>
-  <div class="feature" id="btn-pricing" onclick="togglePanel('pricing')"><span>💡</span>Transparent Pricing</div>
-  <div class="feature" id="btn-db"      onclick="togglePanel('db')"><span>⚡</span>Instant Results</div>
+  <div class="feature" id="btn-aip" onclick="togglePanel('aip')"><span>🤖</span>AI Transparent Pricing</div>
+  <div class="feature" id="btn-db"  onclick="togglePanel('db')"><span>⚡</span>Instant Results</div>
 </div>
 
 <!-- PANELS -->
 <div class="panel-wrap">
 
-  <div class="panel" id="panel-ai">
-    <h2>🤖 AI Cost Predictions</h2>
-    <p style="font-size:14px;color:#5a8ab0;margin-bottom:16px;">Run your estimate above first — AI predictions will populate here.</p>
-    <div class="ai-grid">
-      <div class="ai-card"><div class="label">Low Estimate</div><div class="value" id="ai-low">—</div><div class="sub">Best-case scenario</div></div>
-      <div class="ai-card"><div class="label">Most Likely</div><div class="value" id="ai-mid">—</div><div class="sub">AI predicted cost</div></div>
-      <div class="ai-card"><div class="label">High Estimate</div><div class="value" id="ai-high">—</div><div class="sub">Worst-case scenario</div></div>
-      <div class="ai-card"><div class="label">Confidence</div><div class="value" id="ai-conf">—</div><div class="sub">Model confidence</div><div class="confidence-bar"><div class="confidence-fill" id="ai-conf-bar" style="width:0%"></div></div></div>
+  <!-- COMBINED PANEL: AI Predictions + Transparent Pricing in one window -->
+  <div class="panel" id="panel-aip">
+    <h2>🤖 AI Transparent Pricing</h2>
+    <p style="font-size:14px;color:#5a8ab0;margin-bottom:8px;">
+      AI cost predictions and a full line-by-line breakdown of how your estimate is calculated — together in one place. Run an estimate above to populate.
+    </p>
+
+    <!-- ========== AI PREDICTIONS SECTION ========== -->
+    <h3>🤖 AI Cost Predictions</h3>
+    <div id="aip-ai-content">
+      <div class="empty-state">
+        💡 <strong>Run a cost estimate above</strong> to get personalized AI-powered predictions and savings insights.
+      </div>
     </div>
-    <div class="insight-box" id="ai-insight">💡 <strong>Run a cost estimate above</strong> to get personalized AI-powered predictions and savings insights.</div>
+
+    <!-- ========== TRANSPARENT PRICING SECTION ========== -->
+    <h3>💡 Transparent Pricing Breakdown</h3>
+    <div id="aip-pricing-content">
+      <div class="empty-state">
+        Run an estimate above to see your full line-by-line pricing breakdown — no surprises.
+      </div>
+    </div>
   </div>
 
-  <div class="panel" id="panel-pricing">
-    <h2>💡 Transparent Pricing Breakdown</h2>
-    <p style="font-size:14px;color:#5a8ab0;margin-bottom:16px;">A full line-by-line breakdown of how your cost is calculated — no surprises.</p>
-    <table class="pricing-table">
-      <thead><tr><th>Line Item</th><th>Calculation</th><th>Amount</th></tr></thead>
-      <tbody id="pricing-body"><tr><td colspan="3" style="text-align:center;padding:20px;color:#7aabcc;">Run an estimate above to see your full pricing breakdown.</td></tr></tbody>
-    </table>
-    <div class="pricing-note">How these numbers work: base procedure × network modifier → insurance covers its % → you pay the rest. ±15% variance reflects real-world billing differences. Always request an itemized bill and ask about charity care if costs are a hardship.</div>
-  </div>
-
+  <!-- INSTANT RESULTS PANEL — unchanged -->
   <div class="panel" id="panel-db">
     <h2>⚡ Instant Results — Free &amp; Low-Cost Programs (NY / NJ / CT)</h2>
     <p style="font-size:14px;color:#5a8ab0;margin-bottom:14px;">Search our tri-state database of 52 verified programs. Updated April 2026.</p>
@@ -299,32 +314,23 @@
   const canvas = document.getElementById('bg-canvas');
   const ctx    = canvas.getContext('2d');
 
-  // Size the canvas in PIXELS to match the viewport
   function resize() {
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
-    // Also fix CSS size so there's no CSS/pixel mismatch
     canvas.style.width  = window.innerWidth  + 'px';
     canvas.style.height = window.innerHeight + 'px';
   }
   resize();
   window.addEventListener('resize', resize);
 
-  // ── DRAW FUNCTIONS ──────────────────────────────────────
-
   function drawDoctor(c, x, y, s) {
     c.save(); c.translate(x, y); c.scale(s, s);
-    // Head
     c.beginPath(); c.arc(0, -2.2, 0.9, 0, Math.PI * 2); c.fill();
-    // Body
     c.beginPath(); c.moveTo(-1,-1.2); c.lineTo(-1.2,1.2); c.lineTo(1.2,1.2); c.lineTo(1,-1.2); c.closePath(); c.fill();
-    // White coat
     c.save(); c.fillStyle = 'rgba(255,255,255,0.5)';
     c.beginPath(); c.moveTo(-0.5,-1.2); c.lineTo(0,0.5); c.lineTo(0.5,-1.2); c.closePath(); c.fill(); c.restore();
-    // Stethoscope arc
     c.strokeStyle = 'rgba(30,80,160,0.6)'; c.lineWidth = 0.12;
     c.beginPath(); c.arc(0.4, 0.1, 0.35, -0.5, Math.PI + 0.5); c.stroke();
-    // Red cross
     c.fillStyle = 'rgba(220,30,30,0.8)';
     c.fillRect(-0.12,-0.6, 0.24, 0.08); c.fillRect(-0.04,-0.7, 0.08, 0.26);
     c.restore();
@@ -332,14 +338,11 @@
 
   function drawNurse(c, x, y, s) {
     c.save(); c.translate(x, y); c.scale(s, s);
-    // Head
     c.beginPath(); c.arc(0, -2.2, 0.85, 0, Math.PI * 2); c.fill();
-    // Cap
     c.save(); c.fillStyle = 'rgba(255,255,255,0.85)';
     c.beginPath(); c.moveTo(-0.95,-3.0); c.lineTo(0.95,-3.0); c.lineTo(0.7,-2.6); c.lineTo(-0.7,-2.6); c.closePath(); c.fill();
     c.fillStyle = 'rgba(220,30,30,0.9)';
     c.fillRect(-0.1,-2.95, 0.2, 0.06); c.fillRect(-0.03,-3.0, 0.06, 0.18); c.restore();
-    // Body / dress
     c.beginPath(); c.moveTo(-1,-1.2); c.lineTo(-1.3,1.8); c.lineTo(1.3,1.8); c.lineTo(1,-1.2); c.closePath(); c.fill();
     c.restore();
   }
@@ -347,25 +350,18 @@
   function drawStethoscope(c, x, y, s) {
     c.save(); c.translate(x, y); c.scale(s, s);
     c.strokeStyle = '#1a6fbf'; c.lineWidth = 0.22; c.lineCap = 'round';
-    // Earpieces
     c.beginPath(); c.moveTo(-0.6,-1.8); c.lineTo(-0.6,-1.2); c.stroke();
     c.beginPath(); c.moveTo( 0.6,-1.8); c.lineTo( 0.6,-1.2); c.stroke();
-    // U-tube
     c.beginPath(); c.arc(0,-1.2, 0.6, 0, Math.PI); c.stroke();
-    // Tube down
     c.beginPath(); c.moveTo(0,-0.6); c.bezierCurveTo(0.8,0.2, 1.0,1.0, 0.5,1.6); c.stroke();
-    // Chest piece
     c.beginPath(); c.arc(0.3, 1.9, 0.4, 0, Math.PI * 2); c.fill();
     c.restore();
   }
 
   function drawBandage(c, x, y, s) {
     c.save(); c.translate(x, y); c.scale(s, s); c.save(); c.rotate(0.4);
-    // Strip
     c.beginPath(); c.roundRect(-1.8,-0.5, 3.6,1.0, 0.25); c.fill();
-    // Pad
     c.fillStyle = 'rgba(255,255,255,0.55)'; c.fillRect(-0.55,-0.45, 1.1,0.9);
-    // Dots
     c.fillStyle = 'rgba(80,140,210,0.7)';
     for (let dx=-0.3; dx<=0.3; dx+=0.3)
       for (let dy=-0.25; dy<=0.25; dy+=0.25) {
@@ -376,17 +372,12 @@
 
   function drawPillBottle(c, x, y, s) {
     c.save(); c.translate(x, y); c.scale(s, s);
-    // Orange cap
     c.save(); c.fillStyle = 'rgba(255,130,0,0.85)';
     c.beginPath(); c.roundRect(-0.7,-2.8, 1.4,0.7, 0.15); c.fill(); c.restore();
-    // Bottle
     c.beginPath(); c.roundRect(-0.8,-2.1, 1.6,3.2, 0.2); c.fill();
-    // Label
     c.fillStyle = 'rgba(255,255,255,0.6)'; c.fillRect(-0.65,-1.6, 1.3,1.5);
-    // Rx cross on label
     c.fillStyle = 'rgba(0,70,180,0.7)';
     c.fillRect(-0.12,-1.5,  0.24,0.08); c.fillRect(-0.04,-1.58, 0.08,0.24);
-    // Pills inside
     c.fillStyle = 'rgba(220,60,60,0.6)';
     c.beginPath(); c.ellipse(-0.25,0.3, 0.3,0.15, 0.3, 0,Math.PI*2); c.fill();
     c.beginPath(); c.ellipse( 0.2, 0.7, 0.3,0.15,-0.3, 0,Math.PI*2); c.fill();
@@ -395,17 +386,12 @@
 
   function drawNeedle(c, x, y, s) {
     c.save(); c.translate(x, y); c.scale(s, s); c.rotate(0.6);
-    // Barrel
     c.beginPath(); c.roundRect(-0.35,-2.5, 0.7,3.5, 0.12); c.fill();
-    // Plunger
     c.save(); c.fillStyle = 'rgba(255,255,255,0.6)';
     c.fillRect(-0.28,-2.4, 0.56,0.25); c.restore();
-    // Shaft
     c.strokeStyle = '#1a6fbf'; c.lineWidth = 0.13;
     c.beginPath(); c.moveTo(0,1.0); c.lineTo(0,2.6); c.stroke();
-    // Tip
     c.beginPath(); c.moveTo(-0.12,2.5); c.lineTo(0,2.85); c.lineTo(0.12,2.5); c.fill();
-    // Graduation marks
     c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 0.07;
     for (let i=0; i<5; i++) {
       c.beginPath(); c.moveTo(-0.28,-1.8+i*0.55); c.lineTo(-0.05,-1.8+i*0.55); c.stroke();
@@ -415,18 +401,14 @@
 
   function drawPill(c, x, y, s) {
     c.save(); c.translate(x, y); c.scale(s, s); c.rotate(0.5);
-    // Capsule
     c.beginPath(); c.ellipse(0,0, 1.2,0.5, 0, 0,Math.PI*2); c.fill();
-    // Half-tint
     c.save(); c.clip(); c.fillStyle = 'rgba(255,255,255,0.5)';
     c.fillRect(-1.2,-0.5, 1.2,1.0); c.restore();
-    // Dividing line
     c.strokeStyle = 'rgba(255,255,255,0.4)'; c.lineWidth = 0.07;
     c.beginPath(); c.moveTo(0,-0.5); c.lineTo(0,0.5); c.stroke();
     c.restore();
   }
 
-  // ── SPAWN ICONS ─────────────────────────────────────────
   const TYPES = ['doctor','nurse','stethoscope','bandage','pill_bottle','needle','pill'];
   const icons = [];
   for (let i = 0; i < 28; i++) {
@@ -434,7 +416,6 @@
       type:     TYPES[i % TYPES.length],
       x:        Math.random() * window.innerWidth,
       y:        Math.random() * window.innerHeight,
-      // size 60–120 → divided by 14 = scale 4.3–8.6 → icons ~60–100px tall on screen
       size:     60 + Math.random() * 60,
       speed:    0.4 + Math.random() * 0.5,
       rotSpeed: (Math.random() - 0.5) * 0.006,
@@ -444,7 +425,6 @@
     });
   }
 
-  // ── ANIMATE ─────────────────────────────────────────────
   let t = 0;
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -586,7 +566,7 @@ function filterDB() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  PANEL TOGGLE
+//  PANEL TOGGLE — now only 'aip' and 'db'
 // ════════════════════════════════════════════════════════════
 let activePanel = null;
 function togglePanel(name) {
@@ -597,7 +577,7 @@ function togglePanel(name) {
     document.getElementById(bid).classList.remove('active');
     activePanel = null; return;
   }
-  ['ai','pricing','db'].forEach(k => {
+  ['aip','db'].forEach(k => {
     document.getElementById('panel-' + k).classList.remove('active');
     document.getElementById('btn-'   + k).classList.remove('active');
   });
@@ -605,6 +585,9 @@ function togglePanel(name) {
   document.getElementById(bid).classList.add('active');
   activePanel = name;
   document.getElementById(pid).scrollIntoView({ behavior:'smooth', block:'start' });
+
+  // If the combined panel is opened and we already have a calculation, populate it
+  if (name === 'aip' && lastCalc) updateCombinedPanel(lastCalc);
   if (name === 'db' && !document.getElementById('db-results').innerHTML) renderDB(DB);
 }
 
@@ -658,17 +641,22 @@ function calculate() {
   } else if (typeof Chart === 'undefined') {
     resultDiv.innerHTML += `<div style="margin-top:12px;color:#7aabcc;font-size:13px;">Chart.js not loaded. Chart view is disabled.</div>`;
   }
-  if (activePanel === 'ai')      updateAIPanel(lastCalc);
-  if (activePanel === 'pricing') updatePricingPanel(lastCalc);
+
+  // If the combined panel is currently open, refresh both sections in it
+  if (activePanel === 'aip') updateCombinedPanel(lastCalc);
 }
 
-function updateAIPanel(c) {
+// ════════════════════════════════════════════════════════════
+//  COMBINED PANEL — fills BOTH AI predictions + pricing breakdown
+// ════════════════════════════════════════════════════════════
+function updateCombinedPanel(c) {
   if (!c) return;
-  document.getElementById("ai-low").textContent  = '$' + Math.round(c.patient * 0.85).toLocaleString();
-  document.getElementById("ai-mid").textContent  = '$' + Math.round(c.patient).toLocaleString();
-  document.getElementById("ai-high").textContent = '$' + Math.round(c.patient * 1.15).toLocaleString();
-  document.getElementById("ai-conf").textContent = c.conf + '%';
-  document.getElementById("ai-conf-bar").style.width = c.conf + '%';
+  updateAISection(c);
+  updatePricingSection(c);
+}
+
+function updateAISection(c) {
+  // Build the AI insight message
   let insight;
   if (c.insurance === 0)
     insight = `⚠️ <strong>You selected Uninsured.</strong> Your full estimated cost is <strong>$${Math.round(c.patient).toLocaleString()}</strong>. Many hospitals will reduce or waive this under charity care. Click <strong>Instant Results</strong> to find free programs near you.`;
@@ -678,20 +666,56 @@ function updateAIPanel(c) {
     insight = `✅ <strong>Premium coverage</strong> is working well. AI confidence: <strong>${c.conf}%</strong> your bill lands between $${Math.round(c.patient*0.85).toLocaleString()} – $${Math.round(c.patient*1.15).toLocaleString()}. Always request an itemized bill.`;
   else
     insight = `💡 With <strong>${Math.round(c.insurance*100)}% coverage</strong> you owe $${Math.round(c.patient).toLocaleString()}. If this is a hardship, ask billing about financial assistance — many reduce costs for patients who ask.`;
-  document.getElementById("ai-insight").innerHTML = insight;
+
+  // Build the AI predictions HTML
+  document.getElementById("aip-ai-content").innerHTML = `
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="label">Low Estimate</div>
+        <div class="value">$${Math.round(c.patient * 0.85).toLocaleString()}</div>
+        <div class="sub">Best-case scenario</div>
+      </div>
+      <div class="ai-card">
+        <div class="label">Most Likely</div>
+        <div class="value">$${Math.round(c.patient).toLocaleString()}</div>
+        <div class="sub">AI predicted cost</div>
+      </div>
+      <div class="ai-card">
+        <div class="label">High Estimate</div>
+        <div class="value">$${Math.round(c.patient * 1.15).toLocaleString()}</div>
+        <div class="sub">Worst-case scenario</div>
+      </div>
+      <div class="ai-card">
+        <div class="label">Confidence</div>
+        <div class="value">${c.conf}%</div>
+        <div class="sub">Model confidence</div>
+        <div class="confidence-bar"><div class="confidence-fill" style="width:${c.conf}%"></div></div>
+      </div>
+    </div>
+    <div class="insight-box">${insight}</div>
+  `;
 }
 
-function updatePricingPanel(c) {
-  if (!c) return;
+function updatePricingSection(c) {
   const insLabel  = c.insurance===0?'None (Uninsured)':c.insurance===0.8?'Premium (80%)':c.insurance===0.6?'Standard (60%)':'Basic (40%)';
   const hospLabel = c.hospital===1?'In-Network (×1.0)':'Out-of-Network (×1.5)';
-  document.getElementById("pricing-body").innerHTML = `
-    <tr><td>Base procedure cost</td><td>Selected procedure</td><td>$${c.procedure.toLocaleString()}</td></tr>
-    <tr><td>Network rate modifier</td><td>${hospLabel}</td><td class="${c.hospital>1?'red':'green'}">×${c.hospital.toFixed(1)}</td></tr>
-    <tr><td>Adjusted total</td><td>Base × Network rate</td><td>$${c.total.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-    <tr><td>Insurance payment</td><td>${insLabel}</td><td class="green">−$${c.covered.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-    <tr><td>AI variance buffer</td><td>±15% billing range</td><td style="color:#888">$${Math.round(c.low).toLocaleString()} – $${Math.round(c.high).toLocaleString()}</td></tr>
-    <tr><td><strong>Your estimated cost</strong></td><td>What you pay</td><td class="red"><strong>$${c.patient.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>`;
+
+  document.getElementById("aip-pricing-content").innerHTML = `
+    <table class="pricing-table">
+      <thead>
+        <tr><th>Line Item</th><th>Calculation</th><th>Amount</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Base procedure cost</td><td>Selected procedure</td><td>$${c.procedure.toLocaleString()}</td></tr>
+        <tr><td>Network rate modifier</td><td>${hospLabel}</td><td class="${c.hospital>1?'red':'green'}">×${c.hospital.toFixed(1)}</td></tr>
+        <tr><td>Adjusted total</td><td>Base × Network rate</td><td>$${c.total.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
+        <tr><td>Insurance payment</td><td>${insLabel}</td><td class="green">−$${c.covered.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
+        <tr><td>AI variance buffer</td><td>±15% billing range</td><td style="color:#888">$${Math.round(c.low).toLocaleString()} – $${Math.round(c.high).toLocaleString()}</td></tr>
+        <tr><td><strong>Your estimated cost</strong></td><td>What you pay</td><td class="red"><strong>$${c.patient.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="pricing-note">How these numbers work: base procedure × network modifier → insurance covers its % → you pay the rest. ±15% variance reflects real-world billing differences. Always request an itemized bill and ask about charity care if costs are a hardship.</div>
+  `;
 }
 </script>
 </body>
