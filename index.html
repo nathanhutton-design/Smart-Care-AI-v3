@@ -17,18 +17,14 @@
     position: relative;
   }
 
-  /* ── CANVAS: fixed, behind everything, FULLY VISIBLE ── */
   #bg-canvas {
     position: fixed;
     top: 0; left: 0;
-    /* DO NOT set width/height in CSS — JS controls pixel size */
     pointer-events: none;
     z-index: 0;
-    /* opacity set to 1 here — individual icon opacity handles subtlety */
     opacity: 1;
   }
 
-  /* Everything above the canvas */
   .hero, .container, .features, .panel-wrap {
     position: relative;
     z-index: 2;
@@ -45,7 +41,30 @@
     letter-spacing: -0.5px;
     text-shadow: 0 2px 12px rgba(0,100,200,0.10);
   }
-  .hero p { font-size: 17px; color: #2a6090; margin-top: 8px; font-weight: 600; }
+
+  /* NEW: Tri-State subtitle line */
+  .hero .tristate {
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(15px, 2.4vw, 19px);
+    font-weight: 600;
+    color: #0050cc;
+    margin-top: 10px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .hero .tristate .tri-label {
+    background: linear-gradient(135deg, #007BFF, #0050cc);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    margin-right: 8px;
+    box-shadow: 0 2px 10px rgba(0,80,255,0.25);
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .hero p { font-size: 17px; color: #2a6090; margin-top: 10px; font-weight: 600; }
 
   .container {
     max-width: 780px; margin: 10px auto 20px;
@@ -107,7 +126,6 @@
 
   #chart { margin-top: 24px; max-height: 260px; }
 
-  /* ── FEATURES ── */
   .features {
     display: flex; justify-content: center;
     gap: 20px; flex-wrap: wrap;
@@ -127,7 +145,6 @@
   .feature.active { border-color: #007BFF; background: rgba(230,245,255,0.97); }
   .feature span { display: block; font-size: 28px; margin-bottom: 8px; }
 
-  /* ── PANELS ── */
   .panel-wrap { max-width: 780px; margin: 0 auto 30px; padding: 0 20px; }
   .panel {
     display: none; background: rgba(255,255,255,0.95);
@@ -204,12 +221,18 @@
 </head>
 <body>
 
-<!-- CANVAS — drawn on by JS, sits behind everything -->
 <canvas id="bg-canvas"></canvas>
 
 <!-- HERO -->
 <div class="hero">
   <h1>SmartCare AI Cost Estimator</h1>
+
+  <!-- ⬇ NEW LINE ADDED HERE ⬇ -->
+  <div class="tristate">
+    <span class="tri-label">Tri-State</span>New York • New Jersey • Connecticut
+  </div>
+  <!-- ⬆ NEW LINE ADDED HERE ⬆ -->
+
   <p>Know your healthcare costs before you go — and find free &amp; low-cost programs near you.</p>
 </div>
 
@@ -247,23 +270,19 @@
   <canvas id="chart"></canvas>
 </div>
 
-<!-- FEATURE BUTTONS — now only 2: combined AI+Pricing, plus DB -->
 <div class="features">
   <div class="feature" id="btn-aip" onclick="togglePanel('aip')"><span>🤖</span>AI Transparent Pricing</div>
   <div class="feature" id="btn-db"  onclick="togglePanel('db')"><span>⚡</span>Healthcare Program Resources</div>
 </div>
 
-<!-- PANELS -->
 <div class="panel-wrap">
 
-  <!-- COMBINED PANEL: AI Predictions + Transparent Pricing in one window -->
   <div class="panel" id="panel-aip">
     <h2>🤖 AI Transparent Pricing</h2>
     <p style="font-size:14px;color:#5a8ab0;margin-bottom:8px;">
       AI cost predictions and a full line-by-line breakdown of how your estimate is calculated — together in one place. Run an estimate above to populate.
     </p>
 
-    <!-- ========== AI PREDICTIONS SECTION ========== -->
     <h3>🤖 AI Cost Predictions</h3>
     <div id="aip-ai-content">
       <div class="empty-state">
@@ -271,7 +290,6 @@
       </div>
     </div>
 
-    <!-- ========== TRANSPARENT PRICING SECTION ========== -->
     <h3>💡 Transparent Pricing Breakdown</h3>
     <div id="aip-pricing-content">
       <div class="empty-state">
@@ -280,7 +298,6 @@
     </div>
   </div>
 
-  <!-- INSTANT RESULTS PANEL — unchanged -->
   <div class="panel" id="panel-db">
     <h2>⚡ Instant Results — Free &amp; Low-Cost Programs (NY / NJ / CT)</h2>
     <p style="font-size:14px;color:#5a8ab0;margin-bottom:14px;">Search our tri-state database of 52 verified programs. Updated April 2026.</p>
@@ -308,7 +325,7 @@
 
 <script>
 // ════════════════════════════════════════════════════════════
-//  ANIMATED BACKGROUND  — all 7 icons, fully visible
+//  ANIMATED BACKGROUND
 // ════════════════════════════════════════════════════════════
 (function () {
   const canvas = document.getElementById('bg-canvas');
@@ -566,7 +583,7 @@ function filterDB() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  PANEL TOGGLE — now only 'aip' and 'db'
+//  PANEL TOGGLE
 // ════════════════════════════════════════════════════════════
 let activePanel = null;
 function togglePanel(name) {
@@ -586,7 +603,6 @@ function togglePanel(name) {
   activePanel = name;
   document.getElementById(pid).scrollIntoView({ behavior:'smooth', block:'start' });
 
-  // If the combined panel is opened and we already have a calculation, populate it
   if (name === 'aip' && lastCalc) updateCombinedPanel(lastCalc);
   if (name === 'db' && !document.getElementById('db-results').innerHTML) renderDB(DB);
 }
@@ -617,7 +633,7 @@ function calculate() {
     <strong>Insurance Covers:</strong> $${covered.toLocaleString('en-US',{minimumFractionDigits:2})} (${Math.round(insurance*100)}%)<br>
     <strong style="color:#cc2222">You Pay:</strong> $${patient.toLocaleString('en-US',{minimumFractionDigits:2})}<br><br>
     🤖 <strong>AI Prediction Range:</strong> $${Math.round(low).toLocaleString()} – $${Math.round(high).toLocaleString()} &nbsp;|&nbsp; Confidence: ${conf}%<br>
-    ${insurance===0 ? '⚠️ <strong>Uninsured?</strong> Click <em>Instant Results</em> below to find free & low-cost programs near you.'
+    ${insurance===0 ? '⚠️ <strong>Uninsured?</strong> Click <em>Healthcare Program Resources</em> below to find free & low-cost programs near you.'
                     : hospital>1 ? '⚠️ Out-of-network increases your cost significantly.'
                     : '✅ In-network keeps your costs lower.'}`;
 
@@ -642,7 +658,6 @@ function calculate() {
     resultDiv.innerHTML += `<div style="margin-top:12px;color:#7aabcc;font-size:13px;">Chart.js not loaded. Chart view is disabled.</div>`;
   }
 
-  // If the combined panel is currently open, refresh both sections in it
   if (activePanel === 'aip') updateCombinedPanel(lastCalc);
 }
 
@@ -656,10 +671,9 @@ function updateCombinedPanel(c) {
 }
 
 function updateAISection(c) {
-  // Build the AI insight message
   let insight;
   if (c.insurance === 0)
-    insight = `⚠️ <strong>You selected Uninsured.</strong> Your full estimated cost is <strong>$${Math.round(c.patient).toLocaleString()}</strong>. Many hospitals will reduce or waive this under charity care. Click <strong>Instant Results</strong> to find free programs near you.`;
+    insight = `⚠️ <strong>You selected Uninsured.</strong> Your full estimated cost is <strong>$${Math.round(c.patient).toLocaleString()}</strong>. Many hospitals will reduce or waive this under charity care. Click <strong>Healthcare Program Resources</strong> to find free programs near you.`;
   else if (c.hospital > 1)
     insight = `⚠️ <strong>Out-of-network</strong> is adding 50% to your base cost. Switching in-network could save you approx. <strong>$${Math.round(c.patient-(c.total/1.5)*(1-c.insurance)).toLocaleString()}</strong>.`;
   else if (c.insurance >= 0.8)
@@ -667,7 +681,6 @@ function updateAISection(c) {
   else
     insight = `💡 With <strong>${Math.round(c.insurance*100)}% coverage</strong> you owe $${Math.round(c.patient).toLocaleString()}. If this is a hardship, ask billing about financial assistance — many reduce costs for patients who ask.`;
 
-  // Build the AI predictions HTML
   document.getElementById("aip-ai-content").innerHTML = `
     <div class="ai-grid">
       <div class="ai-card">
@@ -697,26 +710,57 @@ function updateAISection(c) {
 }
 
 function updatePricingSection(c) {
-  const insLabel  = c.insurance===0?'None (Uninsured)':c.insurance===0.8?'Premium (80%)':c.insurance===0.6?'Standard (60%)':'Basic (40%)';
-  const hospLabel = c.hospital===1?'In-Network (×1.0)':'Out-of-Network (×1.5)';
+  const procedureName = document.getElementById("procedure").options[document.getElementById("procedure").selectedIndex].text;
+  const networkName   = c.hospital > 1 ? "Out-of-Network (+50%)" : "In-Network";
+  const baseProcedure = c.procedure;
+  const networkAdj    = c.total - baseProcedure;
+  const insurancePct  = Math.round(c.insurance * 100);
 
   document.getElementById("aip-pricing-content").innerHTML = `
     <table class="pricing-table">
       <thead>
-        <tr><th>Line Item</th><th>Calculation</th><th>Amount</th></tr>
+        <tr>
+          <th>Line Item</th>
+          <th>Detail</th>
+          <th style="text-align:right;">Amount</th>
+        </tr>
       </thead>
       <tbody>
-        <tr><td>Base procedure cost</td><td>Selected procedure</td><td>$${c.procedure.toLocaleString()}</td></tr>
-        <tr><td>Network rate modifier</td><td>${hospLabel}</td><td class="${c.hospital>1?'red':'green'}">×${c.hospital.toFixed(1)}</td></tr>
-        <tr><td>Adjusted total</td><td>Base × Network rate</td><td>$${c.total.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-        <tr><td>Insurance payment</td><td>${insLabel}</td><td class="green">−$${c.covered.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>
-        <tr><td>AI variance buffer</td><td>±15% billing range</td><td style="color:#888">$${Math.round(c.low).toLocaleString()} – $${Math.round(c.high).toLocaleString()}</td></tr>
-        <tr><td><strong>Your estimated cost</strong></td><td>What you pay</td><td class="red"><strong>$${c.patient.toLocaleString('en-US',{minimumFractionDigits:2})}</strong></td></tr>
+        <tr>
+          <td>Base Procedure</td>
+          <td>${procedureName.replace(/\s*\(\$[\d,]+\)/, '')}</td>
+          <td style="text-align:right;">$${baseProcedure.toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+        </tr>
+        <tr>
+          <td>Network Adjustment</td>
+          <td>${networkName}</td>
+          <td style="text-align:right;" class="${networkAdj > 0 ? 'red' : 'green'}">
+            ${networkAdj > 0 ? '+' : ''}$${networkAdj.toLocaleString('en-US',{minimumFractionDigits:2})}
+          </td>
+        </tr>
+        <tr>
+          <td>Subtotal (Total Cost)</td>
+          <td>Before insurance</td>
+          <td style="text-align:right;">$${c.total.toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+        </tr>
+        <tr>
+          <td>Insurance Pays</td>
+          <td>${insurancePct}% coverage</td>
+          <td style="text-align:right;" class="green">−$${c.covered.toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+        </tr>
+        <tr>
+          <td><strong>Your Out-of-Pocket</strong></td>
+          <td><strong>What you pay</strong></td>
+          <td style="text-align:right;" class="red">$${c.patient.toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+        </tr>
       </tbody>
     </table>
-    <div class="pricing-note">How these numbers work: base procedure × network modifier → insurance covers its % → you pay the rest. ±15% variance reflects real-world billing differences. Always request an itemized bill and ask about charity care if costs are a hardship.</div>
+    <div class="pricing-note">
+      💡 <strong>Tip:</strong> Always request an itemized bill from the hospital and review for duplicate charges or services not received. NY, NJ, and CT all have laws requiring hospitals to offer financial assistance — ask for the FAP (Financial Assistance Policy) form.
+    </div>
   `;
 }
 </script>
+
 </body>
 </html>
